@@ -1,0 +1,292 @@
+---
+title: "Diversidad social (cohesion y segregracion)"
+author: "javiera rojas"
+format: html
+editor: visual
+---
+
+```         
+```
+
+## Sociedad mixta
+
+Pondremos énfasis en la diversidad social a nivel socio-cultural, como esta llega afectar a una sociedad determinada y sobre todo las complicaciones que se generan a la hora de interactuar e intregrarse socialmente, ya sea a nivel individual, intersubjetivo o social; estos comportamientos afectarían directamente a la cohesión y/o segregación social.
+
+Las condiciones étnica-económica diversas en barrios mixtos son otra forma de generar conflictos internos que pueden llegar a afectar los sentimientos de pertenencia, ya sea al lugar de residencia y/o hacía los vecinos que lo habitan, así mismo, se desarrolla nuevas identidades que estigmatizan a las distintas familias, aunque aumenta las relaciones y disponibilidad de  integración social entre individuos.
+
+Para esto utilizaremos los datos abtraidos de la base de datos "Latinobarometro, cuestionario 2023", la cual maneja e investiga el desarrollo de la democracia, la economía y la sociedad en su conjunto, por medio de un estudio de opinión pública que aplica anualmente alrededor de 18 países de América Latina representando a más de 600 millones de habitantes; producen y publican los resultados, permitiendo ser utilizados en estudios como este. Por medio de esta obtendremos las variables relevantes para el estudio de "Diversidad social (cohesion y segregacion)": Centrandose en la manera de pensar y opiniones respecto a la sociedad en la que se encuentra, los lazos de confianza que se genera con las personas de la misma nacionalidad o extranjero, teniendo en concideracion el grado de acuerdo respecto a inmigrantes, y por utlimo, agregamos grado de acuerdo respecto a diversidad sexual, como una forma de ver la inclusion social.
+
+Analizar los procesos de diferenciación de las clases sociales en el espacio en el que se mueve, así como la ruptura de las relaciones entre los grupos de diferente nivel socioeconómico, nos entrega información y guía de los comportamientos que transforman la persepción hacía el otro, lo que afectaria la interracción misma. Por lo tanto, la educación sería uno de los muchos factores claves del desarrollo de las personas, ya qué en el lugar en el qué se desarrolló educacionalmente otorga información sobre su nivel socioeconómico, por ende, la baja o mala formación escolar tiene una estrecha relación con la pobreza estructural y segregación social.
+
+### Ajustes iniciales
+
+```{r}
+rm(list=ls())
+options(scipen=999)
+```
+
+```{r}
+#Cargar base de datos
+
+load("C:/Users/Javi/Desktop/practico 4/input (Bases)/Latinobarometro_2023_Esp_Rdata_v1_0.rdata")
+
+```
+
+```{r}
+names(Latinobarometro_2023_Esp_v1_0)
+dim(Latinobarometro_2023_Esp_v1_0)
+
+```
+
+```{r}
+#Paquetes
+#install.packages("librería")
+library(pacman)
+
+pacman::p_load(haven,
+               sjlabelled,
+               dplyr, #Manipulacion de datos
+               stargazer, #Tablas
+               sjmisc, # Tablas
+               summarytools, # Tablas
+               kableExtra, #Tablas
+               sjPlot, #Tablas y gráficos
+               corrplot, # Correlaciones
+               sessioninfo, # Información de la sesión de trabajo
+               ggplot2) # Para la mayoría de los gráficos
+
+find_var(data = Latinobarometro_2023_Esp_v1_0,"idenpa")
+```
+
+### Crear proc_data con variables de interes
+
+```{r}
+proc_data <- Latinobarometro_2023_Esp_v1_0 %>% select(sexo, # sexo
+                                            edad, # edad
+                                            idenpa, #país
+                                            P19N, #manera de pensar respecto a la sociedad
+                                            P3N, #opiniones sobre la sociedad en la que vivimos
+                                            P9STGBS, #confianza en las personas
+                                            
+                                            
+                                            P32INN, #llegada de inmigrantes lo beneficia o perjudica
+                                            
+                                            P33N.D, #grado de acuerdo respecto a inmigrantes
+                                            P33N.C, #grado de acuerdo: inmigrantes aumentan elcrimen         
+                                            P37CSN.B) #grado de acuerdo respecto al matriminio entre personas del mismo sexo
+                                                                    
+#Comprobar
+names(proc_data)  
+```
+
+```{r}
+#Filtrar para usar solo los datos de Chile
+
+proc_data <- proc_data %>% dplyr::filter(idenpa==152)
+```
+
+```{r}
+#variables
+
+frq(proc_data$sexo) #Sin NA
+frq(proc_data$edad) #Sin NA
+frq(proc_data$idenpa) #Sin NA
+frq(proc_data$P19N)
+frq(proc_data$P3N)
+frq(proc_data$P9STGBS)
+proc_data$P9STGBS<-as.factor(proc_data$P9STGBS)
+frq(proc_data$P32INN)
+frq(proc_data$P33N.D)
+frq(proc_data$P33N.C)
+frq(proc_data$P37CSN.B)
+```
+
+```{r}
+
+#TRATAMOS CASOS PERDIDOS CON SUM.ISNA
+sum(is.na(proc_data))
+
+
+#Quitar los NA de la variable P19N
+proc_data$P19N <- car::recode(proc_data$P19N, "c(-5)=NA")
+
+#Quitar los NA de la variable P3N
+proc_data$P3N <- car::recode(proc_data$P3N, "c(-2,-1)=NA")
+
+#Quitar los NA de la variable P9STGBS
+proc_data$P9STGBS <- car::recode(proc_data$P9STGBS, "c(-5)=NA")
+
+#Quitar los NA de la variable P32INN 
+proc_data$P32INN <- car::recode(proc_data$P32INN, "c(-5)=NA")
+
+#Quitar los NA de la variable P33N.D 
+proc_data$P33N.D <- car::recode(proc_data$P33N.D, "c(-5)=NA")
+
+#Quitar los NA de la variable P33N.C 
+proc_data$P33N.C <- car::recode(proc_data$P33N.C, "c(-5)=NA")
+
+#Quitar los NA de la variable P37CSN.B 
+proc_data$P37CSN.B <- car::recode(proc_data$P37CSN.B, "c(-5)=NA")
+
+
+#una de dos
+#proc_data <- proc_data %>% set_na(., na = c(-2, -1, -5))
+```
+
+```{r}
+#Etiquetar las variables 
+proc_data <- proc_data %>% rename("pen_socl"=P19N, #manera de pensar respecto a la sociedad
+                                  "opin_soc"=P3N, #opiniones sobre la sociedad políticos
+                                  "conf_soc"=P9STGBS, #confianza en las personas
+                                  
+                                  "grado_inmi"=P32INN, #llegada de inmigrantes perjudica o beneficia
+                                  
+                                  "acuer_inmi"=P33N.D, #grado de acuerdo respecto a inmigrantes
+                                  "crim_inmi"=P33N.C,#inmigrantes aumenten el crimen
+                                  "grado_sexo"=P37CSN.B) #matrimonio de igual sexo
+
+#Comprobar  
+names(proc_data)
+```
+
+```{r}
+#Re-etiquetar valores de variables 
+
+proc_data$sexo <- set_labels(proc_data$sexo,
+                                   labels=c( "Hombre"=1,
+                                             "Mujer"=2))
+
+proc_data$pen_socl <- set_labels(proc_data$pen_socl,
+                                 labels=c( "sociedad que defienda costumbres"=1,
+                                           "sociedad abierta  a la diversidad"=2))
+
+
+proc_data$opin_soc <- set_labels(proc_data$opin_soc,
+                                  labels=c( "está bien como está"=1,
+                                            "puede mejorarse con pequeños cambios"=2,
+                                            "necesitas reformas profundas"=3,
+                                            "debe cambiarse radicalmente"=4))
+
+
+proc_data$conf_soc <- set_labels(proc_data$conf_soc,
+                                 labels=c( "se puede confiar en la mayoria de personas"=1,
+                                           "uno nunca es lo suficientemente cuidadoso en el trato con los demas"=2))
+
+proc_data$grado_inmi <- set_labels(proc_data$grado_inmi,
+                                     labels=c( "lo perjudica"=2,
+                                               "lo beneficia"=1,
+                                               "ni lo beneficia, ni lo perjudica"=3))
+
+proc_data$acuer_inmi <- set_labels(proc_data$acuer_inmi,
+                                  labels=c( "muy de acuerdo"=1,
+                                            "de acuerdo"=2,
+                                            "en desacuerdo"=3,
+                                            "muy en desacuerdo"=4))
+
+proc_data$crim_inmi <- set_labels(proc_data$crim_inmi,
+                                  labels=c( "muy de acuerdo"=1,
+                                            "de acuerdo"=2,
+                                            "en desacuerdo"=3,
+                                            "muy en desacuerdo"=4))
+
+proc_data$grado_sexo <- set_labels(proc_data$grado_sexo,
+                                  labels=c( "muy de acuerdo"=1,
+                                            "de acuerdo"=2,
+                                            "en desacuerdo"=3,
+                                            "muy en desacuerdo"=4))
+```
+
+```{r}
+#Agrupar edades
+
+proc_data <- proc_data %>% 
+  mutate(edad_groups = case_when(edad >=18 & edad<=25 ~ "Adulto Joven",
+                                 edad >=26 & edad<=59 ~ "Adulto",
+                                 edad >=60 ~ "Adulto mayor"))
+```
+
+### Asegurarse de quitar los NA
+
+```{r}
+##Primero guardar la base original
+proc_data_madre <-proc_data
+dim(proc_data)
+
+#Contar los casos perdidos 
+sum(is.na(proc_data))
+
+#Borrar los casos perdidos 
+proc_data <-na.omit(proc_data)
+
+#Asegurarse
+dim(proc_data)
+```
+
+```{r}
+#Recuperar las etiquetas anteriores 
+
+proc_data <-sjlabelled::copy_labels(proc_data,proc_data_madre)
+
+```
+
+```{r}
+##VISUALIZACION DE DATOS: 
+
+#Paso previo para realizar tablas
+
+proc_data <-as.data.frame(proc_data)
+stargazer(proc_data, type="text")
+```
+
+```{r}
+#Tabla descriptiva de las variables 
+sjmisc::descr(proc_data,
+              show = c("label","range", "mean", "sd", "NA.prc", "n"))%>%
+  kable(.,"markdown")
+
+```
+
+```{r}
+###Crear tabla sobre la manera de pensar respecto a la sociedad y confianza hacia las personas
+
+sjt.xtab(proc_data$pen_socl, proc_data$conf_soc, encoding = "UTF-8")
+
+#Agregar porcentaje
+sjt.xtab(proc_data$pen_socl, proc_data$conf_soc,
+         show.col.prc=TRUE,
+         show.summary=FALSE,
+         encoding = "UTF-8")
+```
+
+El 49% de las personas coinciden en que se puede confiar en la mayoria de personas y a la vez mantener una sociedad mas tradicional que defienda las costumbres, lo que indicaria que en este caso sería posible mantener cierto lazo de confianza con los demas, sin dejar de lado la tradicionalidad de la nacion, por ende, sin que esta influya en la sociedad, ya sea generando cambios, u otros. Sin embargo un poco mas de la mitad, el 51% coincide en que se puede confiar en la mayoria de las personas, sin importar la etnia, raza, nacionalidad, sexo, etc., aceptando la posibilidad de una sociedad mas abierta a la diversidad, teniendo en concideracion todo lo que esta implicaría.
+
+Mas de la mitad, un 54.5% opina que uno nunca sería lo suficientemente cuidadoso en el trato con los demas. Indica la importancia de generar lazos de confianza con miembros de la ciudadania, teniendo en consideracion la forma en que uno trata al otro. Esta reciprocidad sería esencial para mantener una buena convivencia social.
+
+```{r}
+#Tabla descriptiva con summarys 
+summarytools::dfSummary(proc_data, plain.ascii = FALSE)
+
+#Mejor visualiazción 
+view(dfSummary(proc_data, headings=FALSE))
+```
+
+```{r}
+#Crear gráficos usando ggplot2
+graph1 <- proc_data %>% ggplot(aes(x = conf_soc)) + 
+  geom_bar(fill = "pink")+
+  labs(title = "aceptacion de integracion",
+       x = "Confianza en las personas",
+       y = "Frecuencia") +
+  theme_bw()
+
+#para llamarlo de nuevo
+graph1
+
+#lo guardamos
+ggsave(graph1, file="files/img/graph1.png")
+
+```
+
+A partir de este grafico, se infiere que mas de la mitad, cerca de 800 personas, estarian de acuerdo en la importancia que tiene generar lazos de confianza con los ciudadanos, especialmente con los que uno convive cotidianamente, ya sea, en el ambito laboral, estudiantil, etc., para así mantener una convivencia mas plena, teniedo la posibilidad de una itegracion y diversidad a nivel socio-cultural.
+
+Este estudio nos permite observar como los ciudadanos chilenos tienden a generar lazos de confienza, teniendo en consideracion la dificultad a la hora de tratar con un otro. Generalmente las nuevas generaciones coinciden en la aceptacion de una sociedad cada vez mas diversa, en todo su ambitos.

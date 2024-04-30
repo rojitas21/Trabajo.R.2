@@ -1,0 +1,47 @@
+---
+title: "practico 5"
+author: "javiera rojas"
+format: html
+editor: visual
+---
+
+```{r}
+pacman::p_load(haven,sjlabelled,
+               dplyr, #Manipulacion de datos
+              stargazer, #Tablas
+              sjmisc, # Tablas
+              summarytools, # Tablas
+              kableExtra, #Tablas
+              sjPlot, #Tablas y gráficos
+              corrplot, # Correlaciones
+              sessioninfo, # Información de la sesión de trabajo
+              ggplot2) # Para la mayoría de los gráficos
+```
+
+cargamos base de datos
+
+```{r}
+load(url("https://github.com/Kevin-carrasco/R-data-analisis/raw/main/files/data/latinobarometro_total.RData")) #Cargar base de datos
+
+load(url("https://github.com/Kevin-carrasco/R-data-analisis/raw/main/files/data/data_wvs.RData")) #Cargar base de datos
+```
+
+```{read_dta("../input/data_wvs.RData", encoding = "UTF-8")}
+
+```
+
+Para trabajar con ambas bases, agruparemos las variables de interés por país, por lo que ya no trabajaremos directamente con individuos.
+
+```{r}
+context_data <- wvs %>% group_by(B_COUNTRY) %>% # Agrupar por país
+  summarise(gdp = mean(GDPpercap1, na.rm = TRUE), # Promedio de GDP per capita
+         life_exp = mean(lifeexpect, na.rm = TRUE), # Promedio esperanza de vida
+         gini = mean(giniWB, na.rm = TRUE)) %>%  # Promedio gini
+  rename(idenpa=B_COUNTRY) # Para poder vincular ambas bases, es necesario que la variable de identificación se llamen igual
+context_data$idenpa <- as.numeric(context_data$idenpa) # Como era categórica, la dejamos numérica
+
+proc_data <- proc_data %>% group_by(idenpa) %>%  # agrupamos por país
+  summarise(promedio = mean(conf_inst, na.rm = TRUE)) # promedio de confianza en instituciones por país
+```
+
+\
